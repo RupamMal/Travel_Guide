@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rupam's Travel Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+      :root { --bg:#0f172a; --card:#0b1222; --text:#e5e7eb; --muted:#9ca3af; --accent:#22c55e; }
+      *{ box-sizing:border-box }
+      body{ margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; background:linear-gradient(180deg,#0b1023,#101827 50%,#0b1023); color:var(--text); }
+      .wrap{ max-width:980px; margin:40px auto; padding:0 16px; }
+      .card{ background:rgba(11,18,34,0.85); backdrop-filter: blur(8px); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
+      h1{ margin:0 0 8px; font-size:28px; }
+      p.lead{ margin:0 0 24px; color:var(--muted); }
+      form{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+      .row-1{ grid-column:1 / -1; }
+      label{ display:block; font-weight:600; margin-bottom:6px; }
+      input{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:#0b1222; color:var(--text); }
+      .actions{ grid-column:1 / -1; display:flex; gap:12px; align-items:center; }
+      button{ background:var(--accent); color:#0a0f1e; border:0; padding:12px 16px; border-radius:10px; font-weight:700; cursor:pointer; }
+      .hint{ color:var(--muted); font-size:14px; }
+      .out{ margin-top:24px; }
+      .error{ background:#7f1d1d; border:1px solid #ef4444; padding:10px 12px; border-radius:10px; margin-top:12px; }
+      .content{ line-height:1.65; }
+      .content h1, .content h2, .content h3{ margin-top:24px; }
+      .content pre{ background:#0b162c; padding:12px; border-radius:8px; overflow:auto; }
+      .footer{ margin-top:18px; color:var(--muted); font-size:13px; text-align:center; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>Rupam's Travel Guide</h1>
+        <p class="lead">Generate a complete travel plan and itinerary (best time, hotels, foods, month-wise precautions, costs, foreigner visit rate).</p>
+
+        <form id="guide-form">
+          <div class="row-1">
+            <label for="destination">Destination</label>
+            <input id="destination" placeholder="e.g., Tokyo, Bali, Paris" required />
+          </div>
+          <div>
+            <label for="days">Days</label>
+            <input id="days" type="number" min="1" max="21" value="4" />
+          </div>
+          <div>
+            <label for="month">Month (optional)</label>
+            <input id="month" placeholder="e.g., September" />
+          </div>
+          <div>
+            <label for="currency">Currency</label>
+            <input id="currency" value="INR" />
+          </div>
+          <div>
+            <label for="budget">Daily Budget (optional)</label>
+            <input id="budget" type="number" min="10" step="10" placeholder="e.g., 150" />
+          </div>
+          <div>
+            <label for="model">Model</label>
+            <input id="model" value="gemini-1.5-flash" />
+          </div>
+          <div class="actions">
+            <button type="submit">Generate Guide</button>
+            <span class="hint">Output may also be saved on the server</span>
+          </div>
+        </form>
+
+        <div id="error" class="error" style="display:none"></div>
+        <div class="out">
+          <div id="status" class="hint"></div>
+          <div id="result" class="content"></div>
+        </div>
+      </div>
+      <div class="footer">made with 💝, by Rupam</div>
+    </div>
+
+    <script>
+      const form = document.getElementById('guide-form');
+      const statusEl = document.getElementById('status');
+      const resultEl = document.getElementById('result');
+      const errorEl = document.getElementById('error');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl.style.display = 'none';
+        resultEl.innerHTML = '';
+        statusEl.textContent = 'Generating... this may take 10–20 seconds';
+
+        const payload = {
+          destination: document.getElementById('destination').value.trim(),
+          days: document.getElementById('days').value,
+          month: document.getElementById('month').value.trim(),
+          currency: document.getElementById('currency').value.trim(),
+          budget: document.getElementById('budget').value,
+          model: document.getElementById('model').value.trim(),
+        };
+
+        try {
+          const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || `HTTP ${res.status}`);
+          }
+          statusEl.textContent = '';
+          resultEl.innerHTML = marked.parse(data.markdown || '');
+        } catch (err) {
+          statusEl.textContent = '';
+          errorEl.textContent = `Error: ${err.message}`;
+          errorEl.style.display = 'block';
+        }
+      });
+    </script>
+  </body>
+  </html>
+
+
